@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Photocards by Aninha</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pink: #e8547a; --pink-light: #fce8ef; --pink-dark: #c03060;
+    --cream: #fdf6f0; --dark: #1a1015; --muted: #8a6070; --border: #f0dde6;
+    --green: #25D366;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--cream); color: var(--dark); font-family: 'DM Sans', sans-serif; min-height: 100vh; padding-bottom: 3rem; }
+
+  .topstrip { height: 4px; background: repeating-linear-gradient(90deg, var(--pink) 0 18px, var(--pink-dark) 18px 36px, #f5a0bb 36px 54px); }
+
+  header { padding: 1.25rem 1.25rem 0.5rem; display: flex; align-items: center; justify-content: space-between; }
+  .admin-title { font-size: 17px; font-weight: 500; }
+  .admin-title span { color: var(--pink); }
+  .btn-view { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 7px 14px; font-size: 13px; color: var(--muted); cursor: pointer; text-decoration: none; font-family: 'DM Sans', sans-serif; }
+
+  .container { padding: 1rem 1.25rem; max-width: 600px; margin: 0 auto; }
+
+  /* ── tabs ── */
+  .tabs { display: flex; background: white; border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 1.25rem; }
+  .tab { flex: 1; text-align: center; padding: 9px; border-radius: 9px; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--muted); transition: all 0.15s; border: none; background: none; font-family: 'DM Sans', sans-serif; }
+  .tab.active { background: var(--pink); color: white; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── form ── */
+  .card-form { background: white; border: 1.5px solid var(--border); border-radius: 14px; padding: 1.25rem; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; margin-top: 12px; }
+  label:first-child { margin-top: 0; }
+  input[type=text] { width: 100%; padding: 11px 12px; border: 1px solid var(--border); border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 15px; color: var(--dark); background: white; outline: none; transition: border-color 0.15s; }
+  input[type=text]:focus { border-color: var(--pink); }
+
+  /* upload */
+  .upload-area { border: 2px dashed var(--border); border-radius: 12px; padding: 2rem 1rem; text-align: center; cursor: pointer; transition: all 0.15s; position: relative; margin-top: 4px; }
+  .upload-area:hover, .upload-area.dragover { border-color: var(--pink); background: var(--pink-light); }
+  .upload-area input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-icon { font-size: 32px; margin-bottom: 8px; }
+  .upload-text { font-size: 14px; color: var(--muted); line-height: 1.4; }
+  .upload-text strong { color: var(--pink); display: block; margin-top: 4px; }
+  #previewWrap { margin-top: 12px; display: none; text-align: center; }
+  #previewImg { max-height: 180px; border-radius: 10px; max-width: 100%; }
+  .btn-remove-img { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 4px 12px; font-size: 12px; color: var(--muted); cursor: pointer; margin-top: 6px; font-family: 'DM Sans', sans-serif; }
+
+  .btn-add { width: 100%; padding: 14px; background: var(--pink); color: white; border: none; border-radius: 12px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; margin-top: 16px; transition: background 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-add:hover { background: var(--pink-dark); }
+  .btn-add:disabled { background: var(--border); color: var(--muted); cursor: default; }
+
+  /* progress */
+  .progress-bar { height: 4px; background: var(--border); border-radius: 4px; margin-top: 12px; overflow: hidden; display: none; }
+  .progress-fill { height: 100%; background: var(--pink); border-radius: 4px; transition: width 0.3s; width: 0%; }
+
+  /* ── list tab ── */
+  .list-controls { display: flex; gap: 8px; margin-bottom: 1rem; }
+  .search-input { flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none; background: white; }
+  .search-input:focus { border-color: var(--pink); }
+
+  .fc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .fc-item { background: white; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .fc-item img { width: 100%; aspect-ratio: 2/3; object-fit: cover; display: block; background: var(--pink-light); }
+  .fc-item-body { padding: 8px 10px 10px; }
+  .fc-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fc-meta { font-size: 11px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fc-actions { display: flex; gap: 5px; margin-top: 8px; }
+  .btn-sm { flex: 1; padding: 5px 0; border-radius: 8px; font-size: 11px; font-weight: 500; border: 1px solid var(--border); background: white; cursor: pointer; font-family: 'DM Sans', sans-serif; color: var(--muted); transition: all 0.15s; }
+  .btn-sm:hover { border-color: var(--pink); color: var(--pink); }
+  .btn-sm.sold-btn.is-sold { background: var(--pink-light); color: var(--pink-dark); border-color: var(--border); }
+  .btn-sm.del-btn:hover { border-color: #e24b4a; color: #e24b4a; }
+
+  .sold-badge { display: block; text-align: center; font-size: 10px; font-weight: 500; color: var(--pink-dark); background: var(--pink-light); padding: 3px 0; }
+
+  .empty-list { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: 14px; }
+  .loading-list { text-align: center; padding: 2rem; color: var(--muted); font-size: 14px; }
+  .spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--pink); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 0.75rem; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* toast */
+  .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--dark); color: white; padding: 10px 22px; border-radius: 20px; font-size: 13px; transition: transform 0.28s; z-index: 999; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="topstrip"></div>
+
+<header>
+  <div class="admin-title">Painel da <span>Aninha</span> ✦</div>
+  <a href="index.html" class="btn-view">Ver site →</a>
+</header>
+
+<div class="container">
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('add')">➕ Adicionar</button>
+    <button class="tab" onclick="switchTab('list')">📋 Meus Cards</button>
+  </div>
+
+  <!-- ── TAB ADICIONAR ── -->
+  <div class="tab-panel active" id="tab-add">
+    <div class="card-form">
+
+      <label>Foto do fotocard *</label>
+      <div class="upload-area" id="uploadArea">
+        <input type="file" id="inFoto" accept="image/*" capture="environment" onchange="previewFile(this)">
+        <div class="upload-icon">📸</div>
+        <div class="upload-text">
+          Toque para tirar foto ou escolher da galeria
+          <strong>JPG, PNG até 5MB</strong>
+        </div>
+      </div>
+      <div id="previewWrap">
+        <img id="previewImg" src="" alt="preview">
+        <br>
+        <button class="btn-remove-img" onclick="removeImg()">✕ Remover foto</button>
+      </div>
+
+      <label>Nome do idol *</label>
+      <input type="text" id="inNome" placeholder="Ex: Jimin">
+
+      <label>Grupo / artista *</label>
+      <input type="text" id="inGrupo" placeholder="Ex: BTS">
+
+      <label>Era / álbum</label>
+      <input type="text" id="inEra" placeholder="Ex: MOTS:7">
+
+      <div class="progress-bar" id="progressBar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+      <button class="btn-add" id="btnAdd" onclick="addFotocard()">
+        <span id="btnAddText">✦ Adicionar fotocard</span>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ── TAB LISTA ── -->
+  <div class="tab-panel" id="tab-list">
+    <div class="list-controls">
+      <input type="text" class="search-input" id="searchInput" placeholder="Buscar por nome ou grupo..." oninput="filterList()">
+    </div>
+    <div id="listContent">
+      <div class="loading-list"><div class="spinner"></div>Carregando...</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// ⚙️ CONFIGURAÇÃO — edite aqui
+// ═══════════════════════════════════════════
+const CONFIG = {
+  supabaseUrl: "https://dszyvcftrmckuegyucso.supabase.co",       // ← cole a URL do seu projeto Supabase
+  supabaseKey: "sb_publishable_0YUn7YXAoRTefw94MWDdWw_1tm8jneH",  // ← cole a anon/public key do Supabase
+  bucket:      "fotocards",          // nome do bucket no Supabase Storage
+};
+
+let sb, allCards = [], currentFile = null;
+
+// ── init ──
+(function() {
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+  script.onload = () => {
+    sb = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+  };
+  document.head.appendChild(script);
+})();
+
+// ── tabs ──
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', ['add','list'][i] === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'list') loadList();
+}
+
+// ── preview ──
+function previewFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  currentFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('previewImg').src = e.target.result;
+    document.getElementById('previewWrap').style.display = 'block';
+    document.getElementById('uploadArea').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImg() {
+  currentFile = null;
+  document.getElementById('inFoto').value = '';
+  document.getElementById('previewWrap').style.display = 'none';
+  document.getElementById('uploadArea').style.display = 'block';
+}
+
+// ── add fotocard ──
+async function addFotocard() {
+  const nome  = document.getElementById('inNome').value.trim();
+  const grupo = document.getElementById('inGrupo').value.trim();
+  const era   = document.getElementById('inEra').value.trim();
+
+  if (!nome)        { toast('Digite o nome do idol!'); return; }
+  if (!grupo)       { toast('Digite o grupo/artista!'); return; }
+  if (!currentFile) { toast('Adicione uma foto!'); return; }
+  if (!sb)          { toast('Aguarde carregar...'); return; }
+
+  const btn = document.getElementById('btnAdd');
+  btn.disabled = true;
+  document.getElementById('btnAddText').textContent = 'Enviando...';
+  document.getElementById('progressBar').style.display = 'block';
+  setProgress(20);
+
+  try {
+    // 1. compress image
+    const compressed = await compressImage(currentFile, 900, 0.82);
+    setProgress(40);
+
+    // 2. upload to Supabase Storage
+    const ext = currentFile.name.split('.').pop() || 'jpg';
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error: upErr } = await sb.storage.from(CONFIG.bucket).upload(filename, compressed, { contentType: compressed.type });
+    if (upErr) throw upErr;
+    setProgress(70);
+
+    // 3. get public URL
+    const { data: urlData } = sb.storage.from(CONFIG.bucket).getPublicUrl(filename);
+    const imagem_url = urlData.publicUrl;
+    setProgress(85);
+
+    // 4. insert into DB
+    const { error: dbErr } = await sb.from('fotocards').insert({ nome, grupo, era, imagem_url, vendido: false });
+    if (dbErr) throw dbErr;
+    setProgress(100);
+
+    toast('✦ Fotocard adicionado!');
+    resetForm();
+
+  } catch(err) {
+    console.error(err);
+    toast('Erro ao salvar. Verifique as configurações.');
+  } finally {
+    btn.disabled = false;
+    document.getElementById('btnAddText').textContent = '✦ Adicionar fotocard';
+    setTimeout(() => {
+      document.getElementById('progressBar').style.display = 'none';
+      setProgress(0);
+    }, 800);
+  }
+}
+
+function setProgress(pct) {
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+
+// ── compress ──
+function compressImage(file, maxPx, quality) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxPx || h > maxPx) {
+          if (w > h) { h = Math.round(h * maxPx / w); w = maxPx; }
+          else       { w = Math.round(w * maxPx / h); h = maxPx; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        canvas.toBlob(blob => resolve(blob), 'image/jpeg', quality);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── list ──
+async function loadList() {
+  document.getElementById('listContent').innerHTML = '<div class="loading-list"><div class="spinner"></div>Carregando...</div>';
+  const { data, error } = await sb.from('fotocards').select('*').order('created_at', { ascending: false });
+  if (error) { document.getElementById('listContent').innerHTML = '<div class="empty-list">Erro ao carregar.</div>'; return; }
+  allCards = data || [];
+  renderList(allCards);
+}
+
+function filterList() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = allCards.filter(fc =>
+    fc.nome.toLowerCase().includes(q) || (fc.grupo || '').toLowerCase().includes(q)
+  );
+  renderList(filtered);
+}
+
+function renderList(cards) {
+  const el = document.getElementById('listContent');
+  if (cards.length === 0) { el.innerHTML = '<div class="empty-list">Nenhum fotocard encontrado.</div>'; return; }
+  el.innerHTML = `<div class="fc-grid">${cards.map(fc => `
+    <div class="fc-item" id="item-${fc.id}">
+      ${fc.vendido ? '<span class="sold-badge">VENDIDO</span>' : ''}
+      <img src="${fc.imagem_url}" alt="${fc.nome}" loading="lazy">
+      <div class="fc-item-body">
+        <div class="fc-name">${fc.nome}</div>
+        <div class="fc-meta">${fc.grupo}${fc.era ? ' · ' + fc.era : ''}</div>
+        <div class="fc-actions">
+          <button class="btn-sm sold-btn ${fc.vendido ? 'is-sold' : ''}" onclick="toggleVendido('${fc.id}', ${fc.vendido})">${fc.vendido ? 'Disponível' : 'Vendido'}</button>
+          <button class="btn-sm del-btn" onclick="remover('${fc.id}')">✕</button>
+        </div>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+async function toggleVendido(id, vendidoAtual) {
+  const { error } = await sb.from('fotocards').update({ vendido: !vendidoAtual }).eq('id', id);
+  if (error) { toast('Erro ao atualizar.'); return; }
+  const fc = allCards.find(f => String(f.id) === String(id));
+  if (fc) fc.vendido = !vendidoAtual;
+  renderList(allCards);
+  toast(vendidoAtual ? 'Marcado como disponível!' : 'Marcado como vendido!');
+}
+
+async function remover(id) {
+  if (!confirm('Remover este fotocard?')) return;
+  // remove da DB
+  const { error } = await sb.from('fotocards').delete().eq('id', id);
+  if (error) { toast('Erro ao remover.'); return; }
+  allCards = allCards.filter(f => String(f.id) !== String(id));
+  renderList(allCards);
+  toast('Fotocard removido.');
+}
+
+// ── helpers ──
+function resetForm() {
+  document.getElementById('inNome').value = '';
+  document.getElementById('inGrupo').value = '';
+  document.getElementById('inEra').value = '';
+  removeImg();
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

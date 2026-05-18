@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photocards by Aninha</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pink: #e8547a; --pink-light: #fce8ef; --pink-dark: #c03060;
+    --cream: #fdf6f0; --dark: #1a1015; --muted: #8a6070; --border: #f0dde6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--cream); color: var(--dark); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+  .topstrip { height: 4px; background: repeating-linear-gradient(90deg, var(--pink) 0 18px, var(--pink-dark) 18px 36px, #f5a0bb 36px 54px); }
+
+  header { text-align: center; padding: 3rem 1.5rem 2rem; }
+  header::after { content: ''; display: block; width: 60px; height: 2px; background: var(--pink); margin: 1.25rem auto 0; }
+  .site-title { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 6vw, 3.2rem); font-weight: 700; color: var(--dark); line-height: 1.1; }
+  .site-title em { font-style: italic; color: var(--pink); }
+  .site-sub { margin-top: 0.75rem; font-size: 14px; color: var(--muted); font-weight: 300; letter-spacing: 0.04em; }
+
+  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; padding: 0 1.5rem 1.75rem; }
+  .filter-btn { background: white; border: 1px solid var(--border); border-radius: 20px; padding: 6px 16px; font-size: 13px; font-family: 'DM Sans', sans-serif; color: var(--muted); cursor: pointer; transition: all 0.18s; }
+  .filter-btn:hover { border-color: var(--pink); color: var(--pink); }
+  .filter-btn.active { background: var(--pink); border-color: var(--pink); color: white; font-weight: 500; }
+
+  main { max-width: 960px; margin: 0 auto; padding: 0 1.25rem 8rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+
+  .card { background: white; border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; cursor: pointer; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; position: relative; -webkit-tap-highlight-color: transparent; }
+  .card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(232,84,122,0.13); border-color: #f5a0bb; }
+  .card.selected { border-color: var(--pink); border-width: 2px; box-shadow: 0 0 0 3px rgba(232,84,122,0.15); }
+  .card.hidden { display: none; }
+
+  .card-img-wrap { position: relative; width: 100%; aspect-ratio: 2/3; background: var(--pink-light); overflow: hidden; }
+  .card-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .check-badge { position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; border-radius: 50%; background: var(--pink); display: flex; align-items: center; justify-content: center; opacity: 0; transform: scale(0.6); transition: opacity 0.18s, transform 0.18s; pointer-events: none; }
+  .check-badge svg { width: 14px; height: 14px; fill: none; stroke: white; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  .card.selected .check-badge { opacity: 1; transform: scale(1); }
+
+  .sold-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.75); display: flex; align-items: center; justify-content: center; }
+  .sold-tag { background: var(--dark); color: white; font-size: 11px; font-weight: 500; letter-spacing: 0.08em; padding: 4px 12px; border-radius: 20px; transform: rotate(-8deg); }
+
+  .card-body { padding: 9px 11px 11px; }
+  .card-name { font-size: 13px; font-weight: 500; color: var(--dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-meta { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 20px; background: var(--pink-light); color: var(--pink-dark); white-space: nowrap; }
+  .tag.group { background: #f0eaff; color: #6940c0; }
+
+  /* loading */
+  .loading { text-align: center; padding: 4rem 1rem; color: var(--muted); font-size: 14px; }
+  .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--pink); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 1rem; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .no-cards-msg { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: 14px; display: none; }
+
+  /* footer */
+  .footer-outer { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1.5px solid var(--border); z-index: 100; transform: translateY(100%); transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1); }
+  .footer-outer.visible { transform: translateY(0); }
+  .footer-inner { max-width: 960px; margin: 0 auto; padding: 12px 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .footer-count { font-size: 14px; color: var(--muted); }
+  .footer-count strong { color: var(--dark); font-weight: 500; }
+  .footer-names { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+
+  .btn-wa { display: flex; align-items: center; gap: 8px; background: #25D366; color: white; border: none; border-radius: 10px; padding: 11px 20px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background 0.15s; flex-shrink: 0; }
+  .btn-wa:hover { background: #1db954; }
+  .btn-wa svg { width: 18px; height: 18px; fill: white; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="topstrip"></div>
+
+<header>
+  <h1 class="site-title">Photocards<br><em>by Aninha</em></h1>
+  <p class="site-sub">Selecione os fotocards que quer e envie uma mensagem ✦</p>
+</header>
+
+<div class="filter-bar" id="filterBar">
+  <button class="filter-btn active" data-group="Todos">Todos</button>
+</div>
+
+<main>
+  <div id="loadingEl" class="loading">
+    <div class="spinner"></div>
+    Carregando fotocards...
+  </div>
+  <div class="grid" id="grid">
+    <div class="no-cards-msg" id="noCards">Nenhum fotocard disponível ainda.</div>
+  </div>
+</main>
+
+<div class="footer-outer" id="footerOuter">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-count"><strong id="countNum">0</strong> selecionado(s)</div>
+      <div class="footer-names" id="footerNames"></div>
+    </div>
+    <button class="btn-wa" id="btnWa">
+      <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.557 4.126 1.532 5.86L.054 23.25a.75.75 0 00.916.916l5.424-1.485A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.907 0-3.693-.5-5.24-1.375l-.374-.215-3.878 1.062 1.055-3.762-.234-.388A9.955 9.955 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+      Pedir pelo WhatsApp
+    </button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// ⚙️ CONFIGURAÇÃO — edite aqui
+// ═══════════════════════════════════════════
+const CONFIG = {
+  whatsapp:   "5513991542656",          // ← número da Ana (ex: 5513991234567)
+  supabaseUrl: "https://dszyvcftrmckuegyucso.supabase.co",          // ← cole a URL do seu projeto Supabase
+  supabaseKey: "sb_publishable_0YUn7YXAoRTefw94MWDdWw_1tm8jneH",     // ← cole a anon/public key do Supabase
+};
+
+// ── Supabase client (via CDN, sem instalar nada) ──
+const { createClient } = window.supabase ?? {};
+
+let sb, fotocards = [], selected = new Set();
+
+async function init() {
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+  script.onload = async () => {
+    sb = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+    await loadFotocards();
+  };
+  document.head.appendChild(script);
+}
+
+async function loadFotocards() {
+  const { data, error } = await sb
+    .from('fotocards')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  document.getElementById('loadingEl').style.display = 'none';
+
+  if (error || !data) { document.getElementById('noCards').style.display = 'block'; return; }
+  fotocards = data;
+  renderAll();
+}
+
+function renderAll() {
+  const grid = document.getElementById('grid');
+  const noCards = document.getElementById('noCards');
+  const filterBar = document.getElementById('filterBar');
+
+  Array.from(grid.querySelectorAll('.card')).forEach(c => c.remove());
+
+  if (fotocards.length === 0) { noCards.style.display = 'block'; return; }
+  noCards.style.display = 'none';
+
+  // filtros por grupo
+  const groups = ['Todos', ...new Set(fotocards.map(f => f.grupo).filter(Boolean).sort())];
+  filterBar.innerHTML = '';
+  groups.forEach(g => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn' + (g === 'Todos' ? ' active' : '');
+    btn.dataset.group = g;
+    btn.textContent = g;
+    btn.onclick = () => filterBy(g);
+    filterBar.appendChild(btn);
+  });
+
+  fotocards.forEach(fc => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'card-' + fc.id;
+
+    card.innerHTML = `
+      <div class="card-img-wrap">
+        <img src="${fc.imagem_url}" alt="${fc.nome}" loading="lazy">
+        <div class="check-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        ${fc.vendido ? '<div class="sold-overlay"><span class="sold-tag">VENDIDO</span></div>' : ''}
+      </div>
+      <div class="card-body">
+        <div class="card-name">${fc.nome}</div>
+        <div class="card-meta">
+          ${fc.grupo ? `<span class="tag group">${fc.grupo}</span>` : ''}
+          ${fc.era   ? `<span class="tag">${fc.era}</span>` : ''}
+        </div>
+      </div>`;
+
+    if (!fc.vendido) card.onclick = () => toggleCard(fc.id, fc.nome);
+    grid.appendChild(card);
+  });
+}
+
+function filterBy(group) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.group === group));
+  document.querySelectorAll('.card').forEach(card => {
+    const fc = fotocards.find(f => String(f.id) === card.id.replace('card-', ''));
+    if (fc) card.classList.toggle('hidden', group !== 'Todos' && fc.grupo !== group);
+  });
+}
+
+function toggleCard(id, nome) {
+  const key = String(id);
+  selected.has(key) ? selected.delete(key) : selected.add(key);
+  document.getElementById('card-' + id).classList.toggle('selected', selected.has(key));
+  updateFooter();
+}
+
+function updateFooter() {
+  const footer = document.getElementById('footerOuter');
+  if (selected.size === 0) { footer.classList.remove('visible'); return; }
+  footer.classList.add('visible');
+  document.getElementById('countNum').textContent = selected.size;
+  const nomes = [...selected].map(id => fotocards.find(f => String(f.id) === id)?.nome).filter(Boolean);
+  document.getElementById('footerNames').textContent = nomes.join(' · ');
+}
+
+document.getElementById('btnWa').onclick = () => {
+  const lista = [...selected].map(id => {
+    const fc = fotocards.find(f => String(f.id) === id);
+    return `• ${fc.nome}${fc.grupo ? ' (' + fc.grupo + ')' : ''}${fc.era ? ' — ' + fc.era : ''}`;
+  }).join('\n');
+  const msg = `Olá Ana! Vi seus fotocards e quero perguntar sobre:\n\n${lista}\n\nVocê tem esse(s) disponível(is)? E quanto custa?`;
+  window.open(`https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(msg)}`, '_blank');
+};
+
+init();
+</script>
+</body>
+</html>
