@@ -112,9 +112,9 @@
 // ⚙️ CONFIGURAÇÃO — edite aqui
 // ═══════════════════════════════════════════
 const CONFIG = {
-  whatsapp:   "5513991542656",          // ← número da Ana (ex: 5513991234567)
-  supabaseUrl: "https://dszyvcftrmckuegyucso.supabase.co",          // ← cole a URL do seu projeto Supabase
-  supabaseKey: "sb_publishable_0YUn7YXAoRTefw94MWDdWw_1tm8jneH",     // ← cole a anon/public key do Supabase
+  whatsapp:   "55XXXXXXXXXXX",          // ← número da Ana (ex: 5513991234567)
+  supabaseUrl: "SUPABASE_URL",          // ← cole a URL do seu projeto Supabase
+  supabaseKey: "SUPABASE_ANON_KEY",     // ← cole a anon/public key do Supabase
 };
 
 // ── Supabase client (via CDN, sem instalar nada) ──
@@ -218,8 +218,10 @@ function updateFooter() {
 document.getElementById('btnWa').onclick = () => {
   const lista = [...selected].map(id => {
     const fc = fotocards.find(f => String(f.id) === id);
-    return `• ${fc.nome}${fc.grupo ? ' (' + fc.grupo + ')' : ''}${fc.era ? ' — ' + fc.era : ''}`;
-  }).join('\n');
+    const info = `• ${fc.nome}${fc.grupo ? ' (' + fc.grupo + ')' : ''}${fc.era ? ' — ' + fc.era : ''}`;
+    const foto = `  🖼 ${fc.imagem_url}`;
+    return `${info}\n${foto}`;
+  }).join('\n\n');
   const msg = `Olá Ana! Vi seus fotocards e quero perguntar sobre:\n\n${lista}\n\nVocê tem esse(s) disponível(is)? E quanto custa?`;
   window.open(`https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(msg)}`, '_blank');
 };
